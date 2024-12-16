@@ -1,0 +1,16 @@
+<!-- src/main/resources/templates/home.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>이미지 관리 홈</title>
+</head>
+<body>
+<h1>이미지 관리 시스템</h1>
+<nav>
+  <ul>
+    <li><a th:href="@{/images/upload}">이미지 추가</a></li>
+    <li><a th:href="@{/images/list}">이미지 리스트</a></li>
+  </ul>
+</nav>
+</body>
+</html>

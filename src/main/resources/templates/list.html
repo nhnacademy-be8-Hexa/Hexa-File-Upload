@@ -1,0 +1,46 @@
+<!-- src/main/resources/templates/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>이미지 리스트</title>
+</head>
+<body>
+<h1>이미지 리스트</h1>
+<nav>
+  <a th:href="@{/}">홈으로</a> |
+  <a th:href="@{/images/upload}">이미지 추가</a>
+</nav>
+<br/>
+<div th:if="${message}">
+  <p th:text="${message}" style="color:red;"></p>
+</div>
+<div>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+    <tr>
+      <th>이미지</th>
+      <th>파일 이름</th>
+      <th>삭제</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="image : ${images}">
+      <td>
+        <img th:src="${image}" alt="Uploaded Image" width="200" height="200"/>
+      </td>
+      <td>
+        <!-- 이미지 파일 이름 표시 -->
+        <span th:text="${image.substring(image.lastIndexOf('/') + 1)}"></span>
+      </td>
+      <td>
+        <form method="post" th:action="@{/images/delete}" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+          <input type="hidden" name="fileName" th:value="${image.substring(image.lastIndexOf('/') + 1)}"/>
+          <button type="submit">삭제</button>
+        </form>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

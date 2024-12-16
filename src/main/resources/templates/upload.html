@@ -1,0 +1,31 @@
+<!-- src/main/resources/templates/upload.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>이미지 업로드</title>
+</head>
+<body>
+<h1>이미지 업로드</h1>
+<nav>
+  <a th:href="@{/}">홈으로</a> |
+  <a th:href="@{/images/list}">이미지 리스트</a>
+</nav>
+<br/>
+<div th:if="${message}">
+  <p th:text="${message}" style="color:red;"></p>
+</div>
+<form method="post" th:action="@{/images/upload}" enctype="multipart/form-data">
+  <div>
+    <label for="specifyFileName">파일명 지정:</label>
+    <input type="text" id="specifyFileName" name="specifyFileName" required />
+  </div>
+  <div>
+    <label for="files">이미지 선택:</label>
+    <input type="file" id="files" name="files" multiple accept="image/*" required />
+  </div>
+  <div>
+    <button type="submit">업로드</button>
+  </div>
+</form>
+</body>
+</html>
