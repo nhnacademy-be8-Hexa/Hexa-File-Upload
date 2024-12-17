@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class StorageService {
 
     private final String storageUrl;
+    private final String containerName;
     private final AuthService authService;
     private final RestTemplate restTemplate;
     private String cachedTokenId;
@@ -32,9 +33,11 @@ public class StorageService {
 
     public StorageService(
             @Value("${storage.url}") String storageUrl,
+            @Value("${storage.containername}")  String containerName,
             AuthService authService,
             RestTemplate restTemplate,
             SecureKeyManagerService secureKeyManagerService) {
+        this.containerName = secureKeyManagerService.fetchSecretFromKeyManager(containerName);
         this.storageUrl = secureKeyManagerService.fetchSecretFromKeyManager(storageUrl);
         this.authService = authService;
         this.restTemplate = restTemplate;
@@ -43,14 +46,13 @@ public class StorageService {
 
 
     public List<String> getImage(String fileName) {
-        String containerName = "plc"; // 고정된 컨테이너 이름
         String url = String.format("%s/%s", storageUrl, containerName);
         List<String> allObjects = getList(url);
 
         // 파일 이름 필터링 및 전체 URL 생성
         List<String> filteredObjects = allObjects.stream()
                 .filter(name -> name.contains(fileName))
-                .map(name -> String.format("%s/plc/%s", storageUrl, name)) // 전체 URL 생성
+                .map(name -> String.format("%s/%s/%s", storageUrl, containerName,name)) // 전체 URL 생성
                 .collect(Collectors.toList());
 
         return filteredObjects;
@@ -140,7 +142,7 @@ public class StorageService {
     }
     public boolean uploadObject(String objectName, InputStream inputStream) throws IOException {
         String tokenId = getTokenId();  // 요청 시 토큰 갱신(또는 캐시 토큰 사용)
-        String url = String.format("%s/%s/%s", storageUrl, "plc", objectName);
+        String url = String.format("%s/%s/%s", storageUrl, containerName, objectName);
 
         restTemplate.execute(url, HttpMethod.PUT, request -> {
             request.getHeaders().add("X-Auth-Token", tokenId);
@@ -153,7 +155,6 @@ public class StorageService {
 
 
     public boolean deleteObject(String objectName) {
-        String containerName = "plc";
         String tokenId = getTokenId();
         String url = String.format("%s/%s/%s", storageUrl, containerName, objectName);
 
