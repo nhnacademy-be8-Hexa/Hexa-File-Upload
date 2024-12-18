@@ -2,57 +2,83 @@ package com.nhnacademy.hexafileupload.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nhnacademy.hexafileupload.DTO.TokenInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.time.Instant;
+
 @Service
 @Profile("objectStorage")
 public class AuthService {
-    // 인증토큰을 가져오는 과정(시간이 지나면 만료가 되기 때문)
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     private final String authUrl;
-    private final String tenantId;
-    private final String username;
-    private final String password;
+    private final String authBody;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     public AuthService(
             @Value("${auth.url}") String authUrl,
-            @Value("${auth.tenantId}") String tenantId,
-            @Value("${auth.username}") String username,
-            @Value("${auth.password}") String password,
+            @Value("${auth.body}") String authBody,
             RestTemplate restTemplate,
-            SecureKeyManagerService secureKeyManagerService) {
+            SecureKeyManagerService secureKeyManagerService,
+            ObjectMapper objectMapper) {
         this.authUrl = secureKeyManagerService.fetchSecretFromKeyManager(authUrl);
-        this.tenantId = secureKeyManagerService.fetchSecretFromKeyManager(tenantId);
-        this.username = secureKeyManagerService.fetchSecretFromKeyManager(username);
-        this.password = secureKeyManagerService.fetchSecretFromKeyManager(password);
+        this.authBody = secureKeyManagerService.fetchSecretFromKeyManager(authBody);
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
-    public String requestToken() {
+    /**
+     * 토큰 ID와 만료 시간을 함께 반환하는 메서드
+     *
+     * @return TokenInfo 객체
+     */
+    public TokenInfo requestToken() {
         try {
             String url = authUrl + "/tokens";
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Type", "application/json");
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            String body = String.format(
-                    "{\"auth\":{\"tenantId\":\"%s\",\"passwordCredentials\":{\"username\":\"%s\",\"password\":\"%s\"}}}",
-                    tenantId, username, password);
+            HttpEntity<String> request = new HttpEntity<>(authBody, headers);
 
-            HttpEntity<String> request = new HttpEntity<>(body, headers);
+            logger.info("Requesting token from auth server: {}", url);
 
-            // restTemplate 주입을 사용
+            // POST 요청을 통해 토큰 정보 요청
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 
-            JsonNode jsonNode = new ObjectMapper().readTree(response.getBody());
-            return jsonNode.path("access").path("token").path("id").asText();
+            logger.debug("Auth server response status: {}", response.getStatusCode());
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                logger.error("Failed to authenticate, status code: {}", response.getStatusCode());
+                throw new RuntimeException("Failed to authenticate, status code: " + response.getStatusCode());
+            }
+
+            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            JsonNode tokenNode = jsonNode.path("access").path("token");
+
+            String tokenId = tokenNode.path("id").asText();
+            String expiresStr = tokenNode.path("expires").asText();
+            Instant expires = Instant.parse(expiresStr);
+
+            logger.info("Obtained token: {}, expires at: {}", tokenId, expires);
+
+            return new TokenInfo(tokenId, expires);
+        } catch (IOException e) {
+            logger.error("Failed to parse token response", e);
+            throw new RuntimeException("Failed to parse token response: " + e.getMessage(), e);
         } catch (Exception e) {
+            logger.error("Failed to authenticate", e);
             throw new RuntimeException("Failed to authenticate: " + e.getMessage(), e);
         }
     }

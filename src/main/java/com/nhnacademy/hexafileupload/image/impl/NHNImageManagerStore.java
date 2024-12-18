@@ -3,6 +3,7 @@ package com.nhnacademy.hexafileupload.image.impl;
 
 import com.nhnacademy.hexafileupload.exception.imagemanager.*;
 import com.nhnacademy.hexafileupload.image.ImageStore;
+import com.nhnacademy.hexafileupload.tool.FileExtensionVaildation;
 import com.nhnacademy.hexafileupload.tool.ImageNameSeperator;
 
 import org.json.JSONArray;
@@ -65,6 +66,9 @@ public class NHNImageManagerStore implements ImageStore {
 
     @Override
     public boolean saveImages(List<MultipartFile> files, String fileName) {
+
+        FileExtensionVaildation fileExtensionVaildation = new FileExtensionVaildation(files);
+        fileExtensionVaildation.vaildate(); // 확장자 이상하면 FileExtensitonException 발생
 
         String fileSaveURL = apiUrl + IMAGE_ENDPOINT;
 

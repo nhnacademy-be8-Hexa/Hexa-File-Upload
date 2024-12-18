@@ -10,8 +10,9 @@ public class ImageNameSeperator {
     public ImageNameSeperator(String filename) {
 
         String [] fileNameInfo = filename.split("\\.");
+        int fileLength = fileNameInfo.length;
         this.filename = fileNameInfo[0];
-        this.fileExtension = "."+fileNameInfo[1];
+        this.fileExtension = fileNameInfo[fileLength-1];
     }
 
     public String FullName(){

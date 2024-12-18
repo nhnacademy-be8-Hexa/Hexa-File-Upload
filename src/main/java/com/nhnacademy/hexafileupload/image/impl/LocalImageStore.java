@@ -1,5 +1,6 @@
 package com.nhnacademy.hexafileupload.image.impl;
 
+import com.nhnacademy.hexafileupload.tool.FileExtensionVaildation;
 import com.nhnacademy.hexafileupload.tool.ImageNameSeperator;
 import com.nhnacademy.hexafileupload.exception.LocalImageException;
 import com.nhnacademy.hexafileupload.image.ImageStore;
@@ -27,6 +28,10 @@ public class LocalImageStore implements ImageStore {
     @Override
     public boolean saveImages(List<MultipartFile> files, String specifyFileName) {
         List<String> ImagesFileName = new ArrayList<String>();
+
+        FileExtensionVaildation fileExtensionVaildation = new FileExtensionVaildation(files);
+        fileExtensionVaildation.vaildate(); // 확장자 이상하면 FileExtensitonException 예외발생
+
         int image_count = 0;
 
         for (MultipartFile file : files) {
